@@ -1,141 +1,221 @@
-import requests
-import re
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+#
+# μTorrent Thunder Auto-block Script
+# Copyright (C) 2019 Cother
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
 import json
-from requests.cookies import RequestsCookieJar
-import time
+import logging
 import os
+import re
+import requests
+import sched
+import sys
+import time
+import timeit
+
+from bs4 import BeautifulSoup
+from logging.handlers import TimedRotatingFileHandler
+from requests.auth import HTTPBasicAuth
+from requests.cookies import RequestsCookieJar
+
+# Logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[logging.StreamHandler(),
+                              TimedRotatingFileHandler('filter.log', when='midnight')])
+logger = logging.getLogger(__name__)
+
+# Settings
+protocal = 'http'
+domain = 'localhost'
+port = 43202
+path = '/gui'
+user = 'root'
+password = 'toor'
+ipfilter_path = os.path.join(os.getenv('appdata'), 'uTorrent', 'ipfilter.dat')
+interval = 30
 
 
-def getTokenPage(url,cookie_jar):
-    headers = {'Authorization': 'Basic MTox'}
-    tokenUrl = url+"token.html"
-    rsp = requests.get(tokenUrl, headers=headers,cookies =cookie_jar)
-    print (rsp)
-    return  rsp.content
-
-def getToken(html):
-    html = re.sub(r'<html><div id=\'token\' style=\'display:none;\'>', "", html)
-    html = re.sub(r'</div></html>', "", html)
-    return html
-
-def getDownloadItem(url,token,cookie_jar):
-    headers = {'Authorization': 'Basic MTox'}
-    content = {'token': token ,'list' : 1}
-    rsp = requests.get(url,params=content,headers=headers,cookies = cookie_jar)
-    # print (rsp.url)
-    # print (rsp)
-    return str(rsp.content,'utf-8')
-
-def getAlltorrents(downItem):
-    allDict = json.loads(downItem)
-    return  allDict['torrents']
-
-#将正在下载和做种的种子hash返回
-def getTorrentHashAndStatus(Torrent):
-    hash = Torrent[0]
-    status = Torrent[21]
-    # for i in Torrent:
-    #     #     print("序号：%s   值：%s" % (Torrent.index(i) + 1, i))
-    if "Seeding" in status or "Downloading" in status:
-        return hash
-def queryTorrentClient(url,token,cookie_jar,hash):
-    blockList = []
-    headers = {'Authorization': 'Basic MTox'}
-    # action = getpeers & hash = 5
-    # D52 & t = 1545584374277
-    content = {'token': token ,'action': "getpeers", 'hash': hash,'t' : int(time.time())}
-    rsp = requests.get(url, params=content, headers=headers, cookies=cookie_jar)
-    PeersInfo = json.loads(str(rsp.content, 'utf-8'))['peers']
-    # print (allPeers[1])
-    allPeer = PeersInfo[1]
-    for peer in allPeer:
-        if isNeedBlockClient(peer):
-            blockList.append(peer)
-    return blockList
-
-def reloadipfilter(url,token,cookie_jar):
-    blockList = []
-    headers = {'Authorization': 'Basic MTox'}
-    # action = getpeers & hash = 5
-    # D52 & t = 1545584374277
-    content = {'token': token ,'action': "setsetting", 's': 'ipfilter.enable','v' : 1}
-    rsp = requests.get(url, params=content, headers=headers, cookies=cookie_jar)
-    print (rsp.status_code)
-
-def getAllFilerClient(NeedQueryList,url,token,cookie_jar):
-    blockAllList = []
-    for oneTorrentHash in NeedQueryList:
-        blockList = queryTorrentClient(url,token,cookie_jar,oneTorrentHash)
-        if blockList is not None:
-            blockAllList.append(blockList)
-    return(blockAllList)
-
-def isNeedBlockClient(peer):
-    if "XL0012" in peer[5] or "Xunlei" in peer[5] or "Xfplay" in peer[5] or str(peer[5]).startswith("7."):
-        # print (peer[5])
-        return True
-    return False
-
-def getAllFilerClientIpList(AllFilerClientInfo):
-    clientIpList = []
-    for peers in AllFilerClientInfo:
-        for peer in peers:
-            if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$",str(peer[1])):
-                clientIpList.append(peer[1])
-    return clientIpList
+class Torrent():
+    def __init__(self, list):
+        self.hash = list[0]
+        self.status = list[1]  # Binary
+        self.hash = list[2]  # Integer in bytes
+        self.size = list[3]
+        self.progress = list[4]  # Integer in per mils
+        self.downloaded = list[5]  # Integer in bytes
+        self.uploaded = list[6]  # Integer in bytes
+        self.ratio = list[7]  # Integer in per mils
+        self.upload_speed = list[8]  # Integer in bytes per second
+        self.download_speed = list[9]  # Integer in bytes per second
+        self.eta = list[10]  # Integer in seconds
+        self.label = list[11]
+        self.peers_connected = list[12]
+        self.peers_in_swarm = list[13]
+        self.seeds_connected = list[14]
+        self.seeds_in_swarm = list[15]
+        self.availability = list[16]  # Integer in 1/65535ths
+        self.torrent_queue_order = list[17]
+        self.remaining = list[18]  # Integer in bytes
 
 
-def writeToFile(NewFilerClient):
-    newAddList = []
-    with open(fileAddress, 'r') as f1:
-        exsitFilerClient = f1.readlines()
-    f1.close()
-    countOld = len(exsitFilerClient)
-    for ip in NewFilerClient:
-        if ip not in ''.join(exsitFilerClient).strip('\n') :
-            newAddList.append(ip)
-    countNew = len(newAddList)
-    with open(fileAddress, 'a+') as f:
-        for wirteIp in newAddList:
-            f.write(wirteIp + '\n')
-        f.close()
-    with open('./log.txt', 'a+') as f:
-        f.write(time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))+"   add    "+str(countNew) + "  ips"+ '\n')
-        f.close()
+class Peer():
+    def __init__(self, list):
+        self.country = list[0]
+        self.ip = list[1]
+        self.host = list[2]
+        # list[3] unknown
+        self.port = list[4]
+        self.client = list[5]
+        self.flags = list[6]
+        self.progress = list[7]  # Integer in per mils
+        self.download_speed = list[8]  # Integer in bytes per second
+        self.upload_speed = list[9]  # Integer in bytes per second
+        # list[10] unknown
+        # list[11] unknown
+        # list[12] unknown
+        # list[13] unknown
+        # list[14] unknown
+        # list[15] unknown
+        # list[16] unknown
+        # list[17] unknown
+        # list[18] unknown
+        # list[19] unknown
+        # list[20] unknown
+        # list[21] unknown
+
+
+class FilterProcesser():
+    def __init__(self):
+        self.base = '{}://{}:{}{}'.format(protocal, domain, port, path)
+        self.root = '{}/'.format(self.base)
+        response = requests.get(self.root, auth=HTTPBasicAuth(user, password))
+        self.cookie_jar = response.cookies
+        self.token = self._get_token()
+        self.cache_id = None
+        logger.info('Root URL: {}'.format(self.root))
+        logger.info('Token: {}'.format(self.token))
+
+    # Get CSRF Token
+    def _get_token(self):
+        response = requests.get(url='{}/token.html'.format(self.base),
+                                auth=HTTPBasicAuth(user, password),
+                                cookies=self.cookie_jar)
+        return BeautifulSoup(response.content, features='lxml').html.div.text
+
+    # Get torrent list
+    def _get_torrents(self):
+        params = dict(token=self.token, list=1, cid=self.cache_id)
+        response = requests.get(url=self.root,
+                                params=params,
+                                auth=HTTPBasicAuth(user, password),
+                                cookies=self.cookie_jar)
+        # Torrent/Labels List Definition
+        # http://help.utorrent.com/customer/portal/articles/1573947
+        content = json.loads(response.content)
+        self.cache_id = content.get('torrentc')
+        logging.debug('Torrent response: {}'.format(content))
+        logging.debug('Cache ID: {}'.format(self.cache_id))
+        return content.get('torrents', content.get('torrentp', []))
+
+    # Check torrent status
+    def _check_torrent(self, torrent):
+        # torrent[12]: peers connected
+        return Torrent(torrent).peers_connected > 0
+
+    # Get peers list by torrent hash
+    def _get_peers(self, hash):
+        params = dict(token=self.token,
+                      action='getpeers',
+                      hash=hash,
+                      t=int(time.time()))
+        response = requests.get(url=self.root,
+                                params=params,
+                                auth=HTTPBasicAuth(user, password),
+                                cookies=self.cookie_jar)
+        struct = json.loads(response.content).get('peers')
+        logging.debug('Peers list for torrent {}: {}'.format(hash, struct))
+        return struct[1] if len(struct) == 2 else []
+
+    # Check peer avalibility
+    def _check_peer(self, peer):
+        pattern = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)'
+        return re.search(pattern, peer.client) is None
+
+    # Get complete peers list
+    def _get_all_peers(self):
+        peers = dict()
+        for torrent in self._get_torrents():
+            if self._check_torrent(torrent):
+                for peer in self._get_peers(torrent):
+                    peer = Peer(peer)
+                    peers[peer.ip] = peer
+        logging.debug('Complete peers list: {}'.format(peers))
+        return peers
+
+    # Reload IPFilter
+    def _reload_ipfilter(self):
+        params = dict(token=self.token,
+                      action='setsetting',
+                      s='ipfilter.enable',
+                      v=1)
+        response = requests.get(url=self.root,
+                                params=params,
+                                auth=HTTPBasicAuth(user, password),
+                                cookies=self.cookie_jar)
+        return response.ok
+
+    # Write block list to ipfilter file
+    def _write_ipfilter(self, block_list):
+        with open(ipfilter_path, mode='a+') as file:
+            if not self._check_newline(file):
+                file.write('\n')
+            file.writelines(map(lambda s: s + '\n', block_list))
+
+    # Check if ipfilter file is properly ended with newline
+    def _check_newline(self, file):
+        file.seek(file.tell() - 1, os.SEEK_SET)
+        char = file.read()
+        if char == '\r' or char == '\n':
+            logging.debug('Target file ends with newline')
+            return True
+        logging.debug('Target file ends without newline')
+        return False
+
+    # Working loop
+    def loop(self):
+        block_list = set()
+        for ip, peer in self._get_all_peers().items():
+            if not self._check_peer(peer):
+                block_list.add(ip)
+        self._write_ipfilter(block_list)
+        if len(block_list) > 0:
+            logger.info('IPs to be blocked: {}'.format(block_list))
+            self._reload_ipfilter()
+        else:
+            logger.debug('Nothing found')
+
 
 if __name__ == "__main__":
-    while True:
-        time.sleep(60)
-        fileAddress = r'C:\Users\11\AppData\Roaming\uTorrent\ipfilter.dat'
-        Root_url = 'http://127.0.0.1:10000/gui/'
-        headers = {'Authorization': 'Basic MTox'}
-        response = requests.get(Root_url, headers = headers)
-        cookie_jar = response.cookies
-        # print(cookie_jar)
-
-
-
-        tokenContent = getTokenPage(Root_url,cookie_jar)
-        # print(tokenContent)
-        content =str(tokenContent,'utf-8')
-        token =getToken(content)
-        # print (token)
-
-        downItem = getDownloadItem(Root_url,token,cookie_jar)
-        # print (downItem)
-        torrents = getAlltorrents(downItem)
-
-        NeedQueryList = []
-        for torrent in torrents:
-        # print (torrents[0])
-            BThash = getTorrentHashAndStatus(torrent)
-            if BThash is not None:
-                NeedQueryList.append(BThash)
-                # print (torrent[2])
-        print (NeedQueryList)
-        AllFilerClientInfo = getAllFilerClient(NeedQueryList,Root_url,token,cookie_jar)
-        print (AllFilerClientInfo)
-        clientIpList = getAllFilerClientIpList(AllFilerClientInfo)
-        print (clientIpList)
-        writeToFile(clientIpList)
-        reloadipfilter(Root_url,token,cookie_jar)
+    def loop():
+        processer.loop()
+        schedule.enter(delay=interval, priority=1, action=loop)
+    processer = FilterProcesser()
+    schedule = sched.scheduler(timeit.default_timer, time.sleep)
+    schedule.enter(delay=0, priority=1, action=loop)
+    try:
+        schedule.run()
+    except (KeyboardInterrupt, SystemExit):
+        logging.info('Shutting down...')
+        sys.exit()
