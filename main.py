@@ -51,8 +51,8 @@ class Torrent():
     def __init__(self, list):
         self.hash = list[0]
         self.status = list[1]  # Binary
-        self.hash = list[2]  # Integer in bytes
-        self.size = list[3]
+        self.name = list[2]
+        self.size = list[3]  # Integer in bytes
         self.progress = list[4]  # Integer in per mils
         self.downloaded = list[5]  # Integer in bytes
         self.uploaded = list[6]  # Integer in bytes
@@ -82,18 +82,21 @@ class Peer():
         self.progress = list[7]  # Integer in per mils
         self.download_speed = list[8]  # Integer in bytes per second
         self.upload_speed = list[9]  # Integer in bytes per second
-        # list[10] unknown
-        # list[11] unknown
-        # list[12] unknown
-        # list[13] unknown
-        # list[14] unknown
-        # list[15] unknown
-        # list[16] unknown
+        self.download_request = list[10]
+        self.upload_request = list[11]
+        self.connected_time = list[12]
+        self.peer_downloaded = list[13]
+        self.peer_uploaded = list[14]
+        # list[15] unclear
+        self.peer_download_speed = list[16]
         # list[17] unknown
         # list[18] unknown
         # list[19] unknown
         # list[20] unknown
         # list[21] unknown
+
+        # End of list
+        self.torrent_size = list[len(list)-1]
 
 
 class FilterProcesser():
@@ -127,31 +130,33 @@ class FilterProcesser():
         self.cache_id = content.get('torrentc')
         logging.debug('Torrent response: {}'.format(content))
         logging.debug('Cache ID: {}'.format(self.cache_id))
-        return content.get('torrents', content.get('torrentp', []))
+        return [Torrent(item) for item in content.get('torrents', content.get('torrentp', []))]
 
     # Check torrent status
     def _check_torrent(self, torrent):
         # torrent[12]: peers connected
-        return Torrent(torrent).peers_connected > 0
+        return torrent.peers_connected > 0
 
     # Get peers list by torrent hash
-    def _get_peers(self, hash):
+    def _get_peers(self, torrent):
         params = dict(token=self.token,
                       action='getpeers',
-                      hash=hash,
+                      hash=torrent.hash,
                       t=int(time.time()))
         response = requests.get(url=self.root,
                                 params=params,
                                 auth=HTTPBasicAuth(user, password),
                                 cookies=self.cookie_jar)
         struct = json.loads(response.content).get('peers')
-        logging.debug('Peers list for torrent {}: {}'.format(hash, struct))
-        return struct[1] if len(struct) == 2 else []
+        logging.debug('Peers of torrent {}: {}'.format(torrent.hash, struct))
+        return [item+[torrent.size] for item in struct[1]] if len(struct) == 2 else []
 
     # Check peer avalibility
     def _check_peer(self, peer):
-        pattern = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)|(Xfplay)|(dandanplay)|(FDM)'
-        return re.search(pattern, peer.client) is None
+        strict = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)|(Xfplay)|(dandanplay)'
+        grace = r'(FDM)|(go\.torrent)|(Mozilla\/)'
+        return peer.peer_downloaded < peer.torrent_size * 2 if re.search(grace, peer.client) is None else 1 and \
+            re.search(strict, peer.client) is None or peer.peer_uploaded > 0
 
     # Get complete peers list
     def _get_all_peers(self):
