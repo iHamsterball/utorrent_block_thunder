@@ -106,7 +106,13 @@ class FilterProcesser():
         self.root = '{}/'.format(self.base)
         self.cache_id = None
         self.cookie_jar = None
-        self.token = self._get_token()
+        self.token = None
+        while True:
+            try:
+                self.token = self._get_token()
+                break
+            except (RequestException, requests.ConnectionError) as e:
+                logger.warning(e)
         logger.info('Root URL: {}'.format(self.root))
         logger.info('Token: {}'.format(self.token))
 
@@ -199,6 +205,10 @@ class FilterProcesser():
         logging.debug('Target file ends without newline')
         return False
 
+    # Attempt to recover from error
+    def recover(self):
+        self.__init__()
+
     # Working loop
     def loop(self):
         try:
@@ -214,6 +224,14 @@ class FilterProcesser():
                 logger.debug('Nothing found')
         except (RequestException, requests.ConnectionError) as e:
             logger.warning(e)
+            self.recover()
+            logger.info('Recovered from Connection Error')
+        except json.decoder.JSONDecodeError as e:
+            logger.warning(e, exc_info=True)
+            self.recover()
+            logger.info('Recovered from JSON Decode Error')
+        except Exception as e:
+            logger.fatal(e)
 
 
 if __name__ == "__main__":
