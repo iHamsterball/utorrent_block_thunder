@@ -1,7 +1,7 @@
 
 # μTorrent 迅雷自动屏蔽脚本
 
-> 以其他语言阅读此文章： [English](docs/en_us.md)
+> 以其他语言阅读此文章：[English](/docs/en_us.md), [简体中文](/docs/zh_cn.md)
 
 ## 简介
 

@@ -1,6 +1,6 @@
 # μTorrent Thunder Auto-block Script
 
-> Read this article in other languages: [简体中文](docs/zh_cn.md)
+> Read this article in other languages: [English](/docs/en_us.md), [简体中文](/docs/zh_cn.md)
 
 ## Briefing
 
