@@ -30,10 +30,10 @@ from requests.auth import HTTPBasicAuth
 from requests.cookies import RequestsCookieJar
 
 # Logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+logging.basicConfig(level=logging.DEBUG,
+                    format=u'%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(),
-                              TimedRotatingFileHandler('filter.log', when='midnight')])
+                              TimedRotatingFileHandler('filter.log', when='midnight', encoding='utf-8')])
 logger = logging.getLogger(__name__)
 
 # Settings
@@ -115,7 +115,7 @@ class FilterProcesser():
         response = requests.get(url='{}/token.html'.format(self.base),
                                 auth=HTTPBasicAuth(user, password),
                                 cookies=self.cookie_jar)
-        return BeautifulSoup(response.content, features='lxml').html.div.text
+        return BeautifulSoup(response.content.decode('utf-8'), features='lxml').html.div.text
 
     # Get torrent list
     def _get_torrents(self):
@@ -126,7 +126,7 @@ class FilterProcesser():
                                 cookies=self.cookie_jar)
         # Torrent/Labels List Definition
         # http://help.utorrent.com/customer/portal/articles/1573947
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.cache_id = content.get('torrentc')
         logging.debug('Torrent response: {}'.format(content))
         logging.debug('Cache ID: {}'.format(self.cache_id))
@@ -147,7 +147,7 @@ class FilterProcesser():
                                 params=params,
                                 auth=HTTPBasicAuth(user, password),
                                 cookies=self.cookie_jar)
-        struct = json.loads(response.content).get('peers')
+        struct = json.loads(response.content.decode('utf-8')).get('peers')
         logging.debug('Peers of torrent {}: {}'.format(torrent.hash, struct))
         return [item+[torrent.size] for item in struct[1]] if len(struct) == 2 else []
 
