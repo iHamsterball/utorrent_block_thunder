@@ -28,9 +28,10 @@ from bs4 import BeautifulSoup
 from logging.handlers import TimedRotatingFileHandler
 from requests.auth import HTTPBasicAuth
 from requests.cookies import RequestsCookieJar
+from requests.exceptions import RequestException
 
 # Logging
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format=u'%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(),
                               TimedRotatingFileHandler('filter.log', when='midnight', encoding='utf-8')])
@@ -103,10 +104,9 @@ class FilterProcesser():
     def __init__(self):
         self.base = '{}://{}:{}{}'.format(protocal, domain, port, path)
         self.root = '{}/'.format(self.base)
-        response = requests.get(self.root, auth=HTTPBasicAuth(user, password))
-        self.cookie_jar = response.cookies
-        self.token = self._get_token()
         self.cache_id = None
+        self.cookie_jar = None
+        self.token = self._get_token()
         logger.info('Root URL: {}'.format(self.root))
         logger.info('Token: {}'.format(self.token))
 
@@ -115,6 +115,7 @@ class FilterProcesser():
         response = requests.get(url='{}/token.html'.format(self.base),
                                 auth=HTTPBasicAuth(user, password),
                                 cookies=self.cookie_jar)
+        self.cookie_jar = response.cookies
         return BeautifulSoup(response.content.decode('utf-8'), features='lxml').html.div.text
 
     # Get torrent list
@@ -200,16 +201,19 @@ class FilterProcesser():
 
     # Working loop
     def loop(self):
-        block_list = set()
-        for ip, peer in self._get_all_peers().items():
-            if not self._check_peer(peer):
-                block_list.add(ip)
-        self._write_ipfilter(block_list)
-        if len(block_list) > 0:
-            logger.info('IPs to be blocked: {}'.format(block_list))
-            self._reload_ipfilter()
-        else:
-            logger.debug('Nothing found')
+        try:
+            block_list = set()
+            for ip, peer in self._get_all_peers().items():
+                if not self._check_peer(peer):
+                    block_list.add(ip)
+            self._write_ipfilter(block_list)
+            if len(block_list) > 0:
+                logger.info('IPs to be blocked: {}'.format(block_list))
+                self._reload_ipfilter()
+            else:
+                logger.debug('Nothing found')
+        except (RequestException, requests.ConnectionError) as e:
+            logger.warning(e)
 
 
 if __name__ == "__main__":
