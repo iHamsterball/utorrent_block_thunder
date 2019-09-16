@@ -150,7 +150,7 @@ class FilterProcesser():
 
     # Check peer avalibility
     def _check_peer(self, peer):
-        pattern = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)'
+        pattern = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)|(Xfplay)|(dandanplay)|(FDM)'
         return re.search(pattern, peer.client) is None
 
     # Get complete peers list
