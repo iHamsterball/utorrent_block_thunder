@@ -41,8 +41,7 @@ interval = 30
 
 ## 用法
 
-> **前置要求：安装 WebUI**
-> [μTorrent WebUI - Web API - μTorrent Community Forums](https://forum.utorrent.com/topic/49588-μtorrent-webui/)
+> **前置要求：安装 [μTorrent WebUI](https://forum.utorrent.com/topic/49588-μtorrent-webui/)**
 
 ### 直接执行
 

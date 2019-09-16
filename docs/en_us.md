@@ -40,8 +40,7 @@ interval = 30
 
 ## Usage
 
-> **Presequence: Install WebUI**
-> [μTorrent WebUI - Web API - μTorrent Community Forums](https://forum.utorrent.com/topic/49588-μtorrent-webui/)
+> **Presequence: Install [μTorrent WebUI](https://forum.utorrent.com/topic/49588-μtorrent-webui/)**
 
 ### Run directly
 
