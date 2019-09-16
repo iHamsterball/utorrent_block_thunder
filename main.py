@@ -155,7 +155,7 @@ class FilterProcesser():
     def _check_peer(self, peer):
         strict = r'(-XL0012-)|(Xunlei)|(^7\.)|(QQDownload)|(Xfplay)|(dandanplay)'
         grace = r'(FDM)|(go\.torrent)|(Mozilla\/)'
-        return peer.peer_downloaded < peer.torrent_size * 2 if re.search(grace, peer.client) is None else 1 and \
+        return peer.peer_downloaded < peer.torrent_size * (2 if re.search(grace, peer.client) is None else 1) and \
             re.search(strict, peer.client) is None or peer.peer_uploaded > 0
 
     # Get complete peers list
