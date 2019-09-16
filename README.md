@@ -8,10 +8,30 @@ Check μTorrent connected peers periodically, and add IPs whose client matches T
 
 ### Blocked client list
 
+#### Unconditionally block
+
 - -XL0012-***
 - Xunlei/***
 - 7.x.x.x
+- QQDownload
 - Xfplay
+- dandanplay
+
+#### Conditionally block
+
+> Block if peer downloaded more than torrent size
+
+- FDM
+- Mozilla
+- go.torrent
+
+#### Others
+
+> Block if peer downloaded more than twice times torrent size
+
+#### Exception
+
+> It won't be blocked no matter what the client is if a peer has uploaded any amount of data
 
 ### Mechanisim
 
