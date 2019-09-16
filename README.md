@@ -55,4 +55,4 @@ WIP
 
 ## References
 
-[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder](https://www.v2ex.com/t/509327)
+[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder)](https://www.v2ex.com/t/509327)
