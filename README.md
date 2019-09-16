@@ -1,56 +1,58 @@
-# uTorrent 自动屏蔽迅雷脚本
-## 功能
+# μTorrent Thunder Auto-block Script
 
-每隔 60 秒，自动检查 uTorrent 已连接的用户列表，找出迅雷客户端，强制断开，不给吸血雷上传任何数据，并将用户 IP 加入黑名单阻止其再次连接，把带宽留给正规 BT 客户端。
+> Read this article in other languages: [简体中文](docs/zh_cn.md)
 
-## 屏蔽列表
+## Briefing
 
--XL0012-***
+Check μTorrent connected peers periodically, and add IPs whose client matches Thunder etc. to IPFilter.
 
-Xunlei/***
+### Blocked client list
 
-7.x.x.x
+- -XL0012-***
+- Xunlei/***
+- 7.x.x.x
+- Xfplay
 
-Xfplay
+### Mechanisim
 
+> Replica of manual operation basically
 
-## 实现方法
+1. Fetch complete peers list by sending HTTP request according to WebUI API of μTorrent
+2. Filter IPs that using Thunder, and write to ipfilter.dat file
+3. Reload IPFilter by sending HTTP request
 
-1.  根据 uTorrent 的 WebUI API 发送 http request 获取所有已连接用户(peers)信息
-2.  按照 client name 筛选出使用迅雷的 peer IP，写入 ipfilter.dat 文件
-3.  发送 http request 让 uTorrent 重新加载 ipfilter.dat
-4.  uTorrent 禁止 ipfilter.dat 中的 IP 连接
+## Configuration
 
-## 脚本
+- Modify `protocal`, `domain`, `port`, `path`, `user`, `password` fields according your own configuration of WebUI.
+- Currently `ipfilter_path` could automatically fetch default installation path on Windows. If μTorrent is not installed at default path, or you are using Linux / MacOS, please modify the field to absolute path.
+- Modify `interval` field on your need, default 30 seconds, interger in seconds.
 
-基于python 3.7
+``` python
+protocal = 'http'
+domain = 'localhost'
+port = 43202
+path = '/gui'
+user = 'root'
+password = 'toor'
+ipfilter_path = os.path.join(os.getenv('appdata'), 'uTorrent', 'ipfilter.dat')
+interval = 30
+```
 
-python库 requests
+## Usage
 
-# 自行修改脚本中 root_url, auth, ipfilter_path 相关内容
+> **Presequence：Install WebUI**
+> [μTorrent WebUI - Web API - μTorrent Community Forums](https://forum.utorrent.com/topic/49588-μtorrent-webui/)
 
-ut  过滤文件地址 请修改 109行 fileAddress （请先在对应目录新建一个空的ipfilter.dat）
+### Run directly
 
+``` sh
+python main.py
+```
 
-url 访问http连接 请修改 110行 Root_url
+### Run as Windows Service
 
+WIP
 
-ut开启webui访问  设置用户：1  密码：1  （这个没搞定，写死了，就是headers）
+## References
 
-
-
-然后在当前项目界面打开cmd，运行python main.py
-
-# 检查间隔时间可在脚本中自定义，IP黑名单(ipfilter.dat) 建议每天清空一次。
-
-
-完全照搬SHF大佬的思路，感谢大佬的辛苦付出。
-
-https://www.v2ex.com/t/509327
-
-https://github.com/ShenHongFei/utorrent-block-xunlei
-
-
-
-
-
+[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder](https://www.v2ex.com/t/509327)
