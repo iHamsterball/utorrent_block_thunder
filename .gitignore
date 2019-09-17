@@ -42,6 +42,7 @@ coverage.xml
 *.pot
 
 # Logging:
+logs/
 *.log
 
 # Sphinx documentation
