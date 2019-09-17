@@ -34,7 +34,7 @@ from requests.exceptions import RequestException
 logging.basicConfig(level=logging.INFO,
                     format=u'%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(),
-                              TimedRotatingFileHandler('filter.log', when='midnight', encoding='utf-8')])
+                              TimedRotatingFileHandler('logs/filter.log', when='midnight', encoding='utf-8')])
 logger = logging.getLogger(__name__)
 
 # Settings
