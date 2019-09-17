@@ -31,6 +31,7 @@ from requests.cookies import RequestsCookieJar
 from requests.exceptions import RequestException
 
 # Logging
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(level=logging.INFO,
                     format=u'%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.StreamHandler(),
