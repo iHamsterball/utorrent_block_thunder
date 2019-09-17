@@ -2,9 +2,15 @@
 
 > Read this article in other languages: [English](/docs/en_us.md), [简体中文](/docs/zh_cn.md)
 
-## Briefing
+---
+
+![GitHub](https://img.shields.io/github/license/iHamsterball/utorrent_block_thunder)
+![GitHub top language](https://img.shields.io/github/languages/top/iHamsterball/utorrent_block_thunder)
+![Requires.io](https://img.shields.io/requires/github/iHamsterball/utorrent_block_thunder)
 
 Check μTorrent connected peers periodically, and add IPs whose client matches Thunder etc. to IPFilter.
+
+## Briefing
 
 ### Blocked client list
 
@@ -72,6 +78,19 @@ python main.py
 
 WIP
 
+## Caution
+
+It is highly recommended to backup your original `ipfilter.dat` file before using this script. Your `ipfilter.dat` file might be emptied during the execution.
+
+## License
+
+``` plaintext
+Code & Documentation 2019 © Cother
+Code released under the Apache 3.0 license
+Docs released under Creative Commons (CC BY-SA 4.0)
+```
+
 ## References
 
-[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder)](https://www.v2ex.com/t/509327)
+[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder)](https://www.v2ex.com/t/509327)  
+[Torrent/Labels List Definition](http://help.utorrent.com/customer/portal/articles/1573947)

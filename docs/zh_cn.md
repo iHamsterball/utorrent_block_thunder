@@ -3,9 +3,15 @@
 
 > 以其他语言阅读此文章：[English](/docs/en_us.md), [简体中文](/docs/zh_cn.md)
 
-## 简介
+---
+
+![GitHub](https://img.shields.io/github/license/iHamsterball/utorrent_block_thunder)
+![GitHub top language](https://img.shields.io/github/languages/top/iHamsterball/utorrent_block_thunder)
+![Requires.io](https://img.shields.io/requires/github/iHamsterball/utorrent_block_thunder)
 
 定时检查 μTorrent 已连接的用户列表，将迅雷相关客户端所属 IP 加入 IPFilter 文件。
+
+## 简介
 
 ### 屏蔽客户端列表
 
@@ -73,6 +79,19 @@ python main.py
 
 WIP
 
+## 注意
+
+强烈建议事先备份你本来的 `ipfilter.dat` 文件，在脚本执行过程中存在清空 `ipfilter.dat` 文件可能。
+
+## 许可
+
+``` plaintext
+Code & Documentation 2019 © Cother
+Code released under the Apache 3.0 license
+Docs released under Creative Commons (CC BY-SA 4.0)
+```
+
 ## 参考
 
-[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder)](https://www.v2ex.com/t/509327)
+[uTorrent 自动屏蔽迅雷脚本(uTorrent block xunlei/thunder)](https://www.v2ex.com/t/509327)  
+[Torrent/Labels List Definition](http://help.utorrent.com/customer/portal/articles/1573947)
